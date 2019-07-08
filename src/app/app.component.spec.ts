@@ -19,13 +19,13 @@ describe('AppComponent', () => {
   it(`should have as title 'tt-cli'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('tt-cli');
+    expect(app.title).toEqual('ng-tt-cli');
   });
 
   it('should render title in a h1 tag', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to tt-cli!');
+    expect(compiled.querySelector('h1').textContent).toContain('Welcome to ng-tt-cli!');
   });
 });

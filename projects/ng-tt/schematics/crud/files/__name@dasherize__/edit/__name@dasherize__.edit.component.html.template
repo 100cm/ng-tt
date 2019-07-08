@@ -1,0 +1,25 @@
+<div class="form-group">
+  <div class="form-body">
+    <at-form-item>
+      <at-form-control [span]="24">
+        <tt-i18n [t]="'Model.<%= classify(name) %>.name'"></tt-i18n>
+      </at-form-control>
+      <at-form-control [span]="24">
+        <input at-input [(ngModel)]="<%= name %>.name">
+      </at-form-control>
+    </at-form-item>
+
+    <at-form-item>
+      <at-form-control [span]="24">
+        <button (click)="submit()" at-button [atType]="'primary'">
+          <tt-i18n [t]="'Button.submit'"></tt-i18n>
+        </button>
+        <at-divider [vertical]="true"></at-divider>
+        <button at-button (click)="reset()" [atType]="'primary'" hollow>
+          <tt-i18n [t]="'Button.reset'"></tt-i18n>
+        </button>
+      </at-form-control>
+    </at-form-item>
+
+   </div>
+</div>

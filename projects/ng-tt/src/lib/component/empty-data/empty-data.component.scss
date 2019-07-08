@@ -1,0 +1,17 @@
+:host {
+  .mb-empty-data {
+    width: 100%;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center
+  }
+
+  .empty-description {
+    text-align: center;
+    color: rgba(0, 0, 0, .45);
+  }
+
+  .empty-data-box {
+    margin: 32px 0;
+  }
+}

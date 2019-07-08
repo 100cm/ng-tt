@@ -1,0 +1,8 @@
+/**
+ * @fileoverview added by tsickle
+ * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ */
+export { TtI18nComponent } from './i18n.component';
+export { I18nService } from './i18n.service';
+export { zhCN } from './languages/zh-CN';
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290Ijoibmc6Ly9uZy10dC8iLCJzb3VyY2VzIjpbImxpYi9pMThuL2luZGV4LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7QUFBQSxPQUFPLEVBQUUsZUFBZSxFQUFFLE1BQU0sa0JBQWtCLENBQUM7QUFDbkQsT0FBTyxFQUFFLFdBQVcsRUFBRSxNQUFNLGdCQUFnQixDQUFDO0FBQzdDLE9BQU8sRUFBRSxJQUFJLEVBQUUsTUFBTSxtQkFBbUIsQ0FBQyIsInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCB7IFR0STE4bkNvbXBvbmVudCB9IGZyb20gJy4vaTE4bi5jb21wb25lbnQnO1xuZXhwb3J0IHsgSTE4blNlcnZpY2UgfSBmcm9tICcuL2kxOG4uc2VydmljZSc7XG5leHBvcnQgeyB6aENOIH0gZnJvbSAnLi9sYW5ndWFnZXMvemgtQ04nO1xuIl19

@@ -1,0 +1,22 @@
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AtModule } from 'at-ng';
+import { TtDataTableModule, TtI18nModule } from 'ng-tt';
+import { <%= classify(name) %>Component } from './index/<%= dasherize(name) %>.component';
+import { <%= classify(name) %>EditComponent } from './edit/<%= dasherize(name) %>.edit.component';
+import { <%= name.toUpperCase() %>_ROUTES } from './<%= dasherize(name) %>.routes';
+@NgModule({
+  declarations: [<%= classify(name) %>Component, <%= classify(name) %>EditComponent],
+  imports: [
+    FormsModule,
+    AtModule,
+    TtDataTableModule,
+    TtI18nModule,
+    <%= name.toUpperCase() %>_ROUTES,
+    CommonModule
+  ],
+   exports: [<%= classify(name) %>Component, <%= classify(name) %>EditComponent],
+})
+export class  <%= classify(name) %>Module {
+}

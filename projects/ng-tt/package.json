@@ -1,0 +1,33 @@
+{
+  "name": "ng-tt",
+  "version": "0.0.157",
+  "dependencies": {
+    "pluralize": "8.0.0",
+    "@angular/cdk": "~8.0.0",
+    "@schematics/angular": "~8.0.0"
+  },
+  "peerDependencies": {
+    "@angular/common": "^8.0.1",
+    "@angular/core": "^8.0.1",
+    "@angular/cdk": "^8.0.1"
+  },
+  "scripts": {
+    "build": "../../node_modules/.bin/tsc -p tsconfig.schematics.json",
+    "copy:schemas": "rsync -R schematics/*/schema.json ../../publish/",
+    "copy:config": "cp -R schematics/config/files ../../publish/schematics/config",
+    "copy:themes": "cp -R schematics/theme/files ../../publish/schematics/theme",
+    "copy:files": "cp -R schematics/crud/files ../../publish/schematics/crud && cp -R schematics/service/files ../../publish/schematics/service && cp -R schematics/model/files ../../publish/schematics/model",
+    "copy:collection": "cp schematics/collection.json ../../publish/schematics/collection.json",
+    "postbuild": "npm run copy:schemas && npm run copy:files && npm run copy:collection && npm run copy:themes && npm run copy:config"
+  },
+  "schematics": "./schematics/collection.json",
+  "main": "bundles/ng-tt.umd.js",
+  "module": "fesm5/ng-tt.js",
+  "es2015": "fesm2015/ng-tt.js",
+  "esm5": "esm5/ng-tt.js",
+  "esm2015": "esm2015/ng-tt.js",
+  "fesm5": "fesm5/ng-tt.js",
+  "fesm2015": "fesm2015/ng-tt.js",
+  "typings": "ng-tt.d.ts",
+  "metadata": "ng-tt.metadata.json"
+}

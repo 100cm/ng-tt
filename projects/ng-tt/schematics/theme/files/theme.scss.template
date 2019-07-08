@@ -1,0 +1,21 @@
+/**
+ * Default Variables
+ */
+@import "~node_modules/at-ng/styles/sass/mixins/index";
+$brand-color: #EF5D1B;
+/* Color PalettC */
+$primary-100: generateColor($brand-color, 5, true);
+$primary-200: generateColor($brand-color, 4, true);
+$primary-300: generateColor($brand-color, 3, true);
+$primary-400: generateColor($brand-color, 2, true);
+$primary-500: generateColor($brand-color, 1, true);
+$primary-600: $brand-color;
+$primary-700: generateColor($brand-color, 1, false);
+$primary-800: generateColor($brand-color, 2, false);
+$primary-900: generateColor($brand-color, 3, false);
+$primary-1000: generateColor($brand-color, 4, false);
+
+$font-path: '~node_modules/at-ng/styles/sass/fonts';
+
+@import "~node_modules/at-ng/styles/sass/entry";
+

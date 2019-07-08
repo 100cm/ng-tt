@@ -1,0 +1,9 @@
+<tt-common-data-table [Model]="'<%= classify(name) %>'" [search_columns]="search_columns"
+                      [columns]="columns"
+                      [resource]="'<%= pluralize(name) %>'" [data_service]="<%= name %>_service" ></tt-common-data-table>
+<ng-template #extra_handle>
+</ng-template>
+
+<ng-template #exrat_search>
+</ng-template>
+

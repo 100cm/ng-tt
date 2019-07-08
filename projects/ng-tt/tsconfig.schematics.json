@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": [
+      "es2018",
+      "dom"
+    ],
+    "declaration": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "rootDir": "schematics",
+    "outDir": "../../publish/schematics",
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strictNullChecks": false,
+    "target": "es6",
+    "types": [
+      "jasmine",
+      "node"
+    ]
+  },
+  "include": [
+    "schematics/**/*"
+  ],
+  "exclude": [
+    "schematics/*/files/**/*"
+  ]
+}

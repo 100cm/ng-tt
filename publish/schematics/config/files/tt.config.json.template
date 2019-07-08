@@ -1,0 +1,8 @@
+{
+  "project": "<%= project %>",
+  "generate_file_path": {
+    "models": "<%= models_path %>",
+    "services": "<%= services_path %>"
+  },
+  "api_prefix": "/api"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "ng-tt",
+  "version": "0.0.157",
+  "dependencies": {
+    "pluralize": "8.0.0",
+    "@angular/cdk": "~8.0.0",
+    "@schematics/angular": "~8.0.0",
+    "tslib": "^1.9.0"
+  },
+  "peerDependencies": {
+    "@angular/common": "^8.0.1",
+    "@angular/core": "^8.0.1",
+    "@angular/cdk": "^8.0.1"
+  },
+  "schematics": "./schematics/collection.json",
+  "main": "bundles/ng-tt.umd.js",
+  "module": "fesm5/ng-tt.js",
+  "es2015": "fesm2015/ng-tt.js",
+  "esm5": "esm5/ng-tt.js",
+  "esm2015": "esm2015/ng-tt.js",
+  "fesm5": "fesm5/ng-tt.js",
+  "fesm2015": "fesm2015/ng-tt.js",
+  "typings": "ng-tt.d.ts",
+  "metadata": "ng-tt.metadata.json",
+  "sideEffects": false
+}

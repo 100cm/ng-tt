@@ -1,0 +1,40 @@
+{
+  "$schema": "../../../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "ng-add": {
+      "description": "add library to project",
+      "factory": "./ng-add/index#ngAdd"
+    },
+    "service": {
+      "description": "Generate a service in the project.",
+      "factory": "./service/index#Service",
+      "schema": "./service/schema.json"
+    },
+    "crud": {
+      "description": "Generate crud in the project.",
+      "factory": "./crud/index#Crud",
+      "schema": "./crud/schema.json"
+    },
+    "model": {
+      "description": "Generate Model in the project.",
+      "factory": "./model/index#Model",
+      "schema": "./model/schema.json"
+    },
+    "theme": {
+      "description": "Generate Theme in the project.",
+      "factory": "./theme/index#Theme",
+      "schema": "./theme/schema.json"
+    },
+    "config": {
+      "description": "Generate Config in the project.",
+      "factory": "./config/index#Config",
+      "schema": "./config/schema.json"
+    },
+    "ng-add-setup-project": {
+      "description": "Sets up the specified project after the ng-add dependencies have been installed.",
+      "private": true,
+      "factory": "./ng-add/setup-project/index",
+      "schema": "./ng-add/schema.json"
+    }
+  }
+}

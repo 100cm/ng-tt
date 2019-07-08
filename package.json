@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "release": "ng build ng-tt && cd projects/ng-tt && npm run build && cd ../../publish && npm publish",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
@@ -19,12 +20,15 @@
     "@angular/platform-browser": "~8.0.0",
     "@angular/platform-browser-dynamic": "~8.0.0",
     "@angular/router": "~8.0.0",
+    "@schematics/angular": "~8.0.0",
     "rxjs": "~6.4.0",
     "tslib": "^1.9.0",
-    "zone.js": "~0.9.1"
+    "zone.js": "~0.9.1",
+    "at-ng": "^8.0.2-rc4"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.800.0",
+    "@angular-devkit/build-ng-packagr": "~0.800.0",
     "@angular/cli": "~8.0.0",
     "@angular/compiler-cli": "~8.0.0",
     "@angular/language-service": "~8.0.0",
@@ -39,8 +43,10 @@
     "karma-coverage-istanbul-reporter": "~2.0.1",
     "karma-jasmine": "~2.0.1",
     "karma-jasmine-html-reporter": "^1.4.0",
+    "ng-packagr": "^5.1.0",
     "protractor": "~5.4.0",
     "ts-node": "~7.0.0",
+    "tsickle": "^0.35.0",
     "tslint": "~5.15.0",
     "typescript": "~3.4.3"
   }

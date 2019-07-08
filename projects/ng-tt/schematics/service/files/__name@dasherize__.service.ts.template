@@ -1,0 +1,24 @@
+import { Injectable } from '@angular/core';
+import { HttpHelper, SearchParams, JsonResponse, CreateParams} from 'ng-tt';
+import { <%= classify(name) %>  } from '../models/<%= dasherize(name) %>';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class <%= classify(name) %>Service {
+  constructor(private http: HttpHelper) { }
+
+   public <%= pluralize(name) %>(search_params: SearchParams = {}): Observable<JsonResponse<{ <%= pluralize(name) %>: <%= classify(name) %>[] }>> {
+      return this.http.AUTH_HTTP_GET<JsonResponse<{ <%= pluralize(name) %>: <%= classify(name) %>[] }>>('<%= api_prefix %>/<%= pluralize(name) %>.json', search_params);
+    }
+
+    public create(params: CreateParams): Observable<JsonResponse<{ <%= name %>: <%= classify(name) %> }>> {
+      return this.http.AUTH_HTTP_POST('<%= api_prefix %>/<%= pluralize(name) %>.json', params);
+    }
+
+    public update(params: CreateParams): Observable<JsonResponse<{ <%= name %>: <%= classify(name) %> }>> {
+      return this.http.AUTH_HTTP_PUT('<%= api_prefix %>/<%= pluralize(name) %>/id.json', params);
+    }
+
+}

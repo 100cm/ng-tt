@@ -1,0 +1,42 @@
+import { Component, OnInit } from '@angular/core';
+import { <%= classify(name) %>Service } from '../../../<%= service_relative %>/<%= dasherize(name) %>.service';
+import { DataBaseComponent } from 'ng-tt';
+import { <%= classify(name) %> } from '../../../<%= model_relative %>/<%= dasherize(name) %>';
+@Component({
+  selector: '<%=component_prefix %>-<%= dasherize(name) %>',
+  templateUrl: './<%= dasherize(name) %>.component.html'
+})
+export class <%= classify(name) %>Component extends DataBaseComponent<<%= classify(name) %>> implements OnInit {
+
+  constructor(public <%= name %>_service: <%= classify(name) %>Service) {
+    super();
+  }
+
+  ngOnInit(): void {
+  }
+
+  search_columns = [
+    {
+        name: 'ID',
+        key: 'id',
+        type: 'number'
+    },
+    {
+      name: '名称',
+      key: 'name',
+      type: 'input'
+    }
+  ];
+
+  columns = [
+    {
+      name: 'ID',
+      key: 'id'
+    },
+    {
+      name: '名称',
+      key: 'name'
+    }
+  ];
+
+}

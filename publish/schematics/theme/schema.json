@@ -1,0 +1,6 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "SchematicsTheme",
+  "title": "Generate tt Model",
+  "type": "object"
+}

@@ -1,0 +1,67 @@
+import { Component, OnInit, TemplateRef, ViewChild, Input } from '@angular/core';
+import { <%= classify(name) %>Service } from '../../../<%= service_relative %>/<%= dasherize(name) %>.service';
+import { <%= classify(name) %> } from '../../../<%= model_relative %>/<%= dasherize(name) %>';
+import { I18nService } from 'ng-tt';
+import { AtMessageService } from 'at-ng';
+import { ActivatedRoute, Router } from '@angular/router';
+@Component({
+  selector: '<%=component_prefix %>-<%= dasherize(name) %>-edit',
+  templateUrl: './<%= dasherize(name) %>.edit.component.html'
+})
+export class <%= classify(name) %>EditComponent implements OnInit {
+
+  constructor(public <%= name %>_service: <%= classify(name) %>Service,
+              private route: ActivatedRoute,
+              private message_service: AtMessageService,
+              private router: Router,
+              private i18nService: I18nService) {
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe(param => {
+      const id = param.id;
+      if (id === 'new') {
+        this.<%= name %> = new <%= classify(name) %>();
+      } else {
+        this.<%= name %>_service.<%= pluralize(name) %>({
+          'search[id]': id
+        }).subscribe(data => {
+          this.<%= name %> = data.<%= pluralize(name) %>[0];
+          this.cacheData = data.<%= pluralize(name) %>[0]
+        });
+      }
+    });
+  }
+
+  @Input() <%= name %>: <%= classify(name) %> = new <%= classify(name) %>();
+  cacheData = new <%= classify(name) %>();
+
+  submit(): void {
+    if (this.<%= name %>.id) {
+      this.<%= name %>_service.update({update: this.<%= name %>, <%= name %>_id: this.<%= name %>.id}).subscribe(data => {
+        if (data.status.code === '<%= response_ok.toString() %>') {
+          this.message_service.success({
+            message: this.i18nService.translate('Message.handle_success'),
+            duration: 2000
+          });
+          this.<%= name %> = data.<%= name %>;
+          // this.router.navigate(['<%=base_route %>/<%= pluralize(name) %>']);
+        }
+      });
+    } else {
+      this.<%= name %>_service.create({create: this.<%= name %>}).subscribe(data => {
+        if (data.status.code === '<%= response_ok.toString() %>') {
+          this.message_service.success({
+            message: this.i18nService.translate('Message.handle_success'),
+            duration: 2000
+          });
+          this.router.navigate(['<%=base_route %>/<%= pluralize(name) %>']);
+        }
+      });
+    }
+
+  }
+  reset(): void {
+    this.<%= name %> = {...this.cacheData};
+  }
+}

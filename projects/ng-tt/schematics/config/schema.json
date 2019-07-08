@@ -1,0 +1,6 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "SchematicsConfig",
+  "title": "init tt config project",
+  "type": "object"
+}
