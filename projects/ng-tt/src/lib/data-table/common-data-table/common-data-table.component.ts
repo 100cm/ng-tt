@@ -7,6 +7,9 @@ export interface CommonDataTableColumn {
   key: string;
   resource?: string;
   resource_key?: string;
+  array?: boolean;
+  array_key?: string;
+  dictionary?: { [x: string]: string };
 }
 
 @Component({
@@ -33,14 +36,23 @@ export interface CommonDataTableColumn {
               {{item | nestedJsonKey : column.key}}</a>
           </ng-container>
           <ng-container *ngIf="!column.resource_key">
-            {{item | nestedJsonKey : column.key}}
+            <ng-container *ngIf="column.array">
+              <ng-container
+                *ngFor="let column_array_item of  (item | nestedJsonKey : column.key);last as isLast">
+                <span>{{column.dictionary ? column.dictionary[column_array_item[column.array_key]] : column_array_item[column.array_key]}} </span>
+                <at-divider [vertical]="true" *ngIf="!isLast"></at-divider>
+              </ng-container>
+            </ng-container>
+            <ng-container *ngIf="!column.array">
+              {{column.dictionary ? column.dictionary[(item | nestedJsonKey : column.key)] : (item | nestedJsonKey : column.key)}}
+            </ng-container>
           </ng-container>
         </td>
         <td at-td>
           <a [routerLink]="prefixRoute +'/'+resource +'/edit/' + item.id">
             <tt-i18n [t]="'Model.Handle.edit'"></tt-i18n>
           </a>
-          <at-divider [vertical]="true"></at-divider>
+          <at-divider [vertical]="true" *ngIf="handle_columns"></at-divider>
           <ng-template [ngTemplateOutlet]="handle_columns" [ngTemplateOutletContext]="{$implicit: item}"></ng-template>
         </td>
       </tr>

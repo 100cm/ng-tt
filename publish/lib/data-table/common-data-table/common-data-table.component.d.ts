@@ -6,6 +6,11 @@ export interface CommonDataTableColumn {
     key: string;
     resource?: string;
     resource_key?: string;
+    array?: boolean;
+    array_key?: string;
+    dictionary?: {
+        [x: string]: string;
+    };
 }
 export declare class CommonDataTableComponent extends DataBaseComponent implements OnInit {
     constructor();

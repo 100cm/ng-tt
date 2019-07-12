@@ -6,8 +6,9 @@ import { AnyObject } from '../interfaces/any-object.interface';
 })
 export class NestedJsonKeyPipe implements PipeTransform {
 
-  transform(value: AnyObject, args?: string): AnyObject {
-    let returnValue = value;
+  transform(value: AnyObject, args?: string): string {
+    // @ts-ignore
+    let returnValue: string = value;
     const keys = args.split('.');
     keys.forEach(k => {
       returnValue = returnValue[k];
