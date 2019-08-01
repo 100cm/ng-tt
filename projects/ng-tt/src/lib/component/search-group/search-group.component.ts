@@ -34,7 +34,7 @@ export interface SearchColumn {
               </atInput>
               <at-select [multiple]="item.multiple" [(ngModel)]="search_params['search['+item.key +']']" *ngSwitchCase="'select'"
                          style="width: 290px">
-                <at-option [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
+                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
                 <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
                            [atLabel]="option.name"
                            [atValue]="option.value">
