@@ -18,53 +18,7 @@ export interface SearchColumn {
   selector: 'tt-search-group',
   template: `
     <div at-row class="search-bar-container">
-      <div *ngFor="let item of search_columns;let i =index" at-col [span]="item.type ==='range'? 11 : 5"
-           [offset]=" ((i) % 4) == 0 ? 0 : 1">
-        <at-form-item>
-          <div at-col [span]="24" class="search-label">
-            {{ ("Model." + item.name) | I18n | async}}
-          </div>
-          <at-form-control [span]="24">
-            <ng-container [ngSwitch]="item.type">
-              <input class="search-input" *ngSwitchCase="'input'" at-input
-                     [(ngModel)]="search_params['search[like_'+item.key +']']">
-              <atInput class="search-input" *ngSwitchCase="'number'"
-                       [atType]="'number'"
-                       [(ngModel)]="search_params['search['+item.key +']']">
-              </atInput>
-              <at-select [multiple]="item.multiple" [(ngModel)]="search_params['search['+item.key +']']" *ngSwitchCase="'select'"
-                         style="width: 290px">
-                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
-                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
-                           [atLabel]="option.name"
-                           [atValue]="option.value">
-                </at-option>
-              </at-select>
-              <ng-container *ngSwitchCase="'range'">
-                <div at-row>
-                  <div at-col [span]="11">
-                    <atDatetimePicker [ngModel]="range_keys[item.key]?.before"
-                                      [inputIcon]="'calendar'"
-                                      (ngModelChange)="setRange($event,item.key,'before')"
-                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
-                  </div>
-                  <div at-col [span]="1" style="  left: 1%;position: relative">
-                    <at-divider [height]="3"></at-divider>
-                  </div>
-                  <div at-col [span]="11" [offset]="1">
-                    <atDatetimePicker [ngModel]="range_keys[item.key]?.after"
-                                      [inputIcon]="'calendar'"
-                                      (ngModelChange)="setRange($event,item.key,'after')"
-                                      [format]="'YYYY-MM-DD HH:mm:ss'"
-                                      [disableDate]="range_keys[item.key]?.before"></atDatetimePicker>
-                  </div>
-                </div>
-              </ng-container>
-            </ng-container>
-          </at-form-control>
-        </at-form-item>
-
-      </div>
+      <ng-template [ngTemplateOutlet]="search_template"></ng-template>
       <ng-template [ngTemplateOutlet]="extra_search"></ng-template>
       <div at-col [span]="24">
         <div style="margin-bottom: 24px">
@@ -158,11 +112,15 @@ export interface SearchColumn {
           </button>
           <at-divider [vertical]="true" [height]="20"></at-divider>
           <button at-button (click)="reset()" [atType]="'primary'" hollow>
-        <span>
+            <span>
         <tt-i18n [t]="'Button.reset'"></tt-i18n>
       </span>
           </button>
-          <ng-template [ngTemplateOutlet]="buttons" ></ng-template>
+          <at-divider [vertical]="true" [height]="20"></at-divider>
+          <button at-button (click)="edit()" [atType]="'primary'">
+            <span>批量编辑</span>
+          </button>
+          <ng-template [ngTemplateOutlet]="buttons"></ng-template>
         </div>
       </div>
     </div>
@@ -176,6 +134,104 @@ export interface SearchColumn {
     <!--</ul>-->
     <!--</at-dropdown>-->
     <!--</div>-->
+
+    <at-drawer [atClosable]="true" [atVisible]="visible" (atOnClose)="close()" atPlacement="right" [atTitle]="drawer_title" [atWidth]="320">
+      <ng-template [ngTemplateOutlet]="edit_template"></ng-template>
+    </at-drawer>
+    <ng-template #drawer_title>
+      <button at-button (click)="batchUpdate()" [atType]="'primary'"> 批量更新</button>
+      <!--<at-divider [vertical]="true" [height]="20"></at-divider>-->
+      <!--<button at-button (click)="batchDelete()" [atType]="'error'" hollow> 批量删除</button>-->
+    </ng-template>
+
+    <ng-template #search_template let-item let-bind="bind">
+      <div *ngFor="let item of search_columns;let i =index" at-col [span]="item.type ==='range'? 11 : 5"
+           [offset]=" ((i) % 4) == 0 ? 0 : 1">
+        <at-form-item>
+          <div at-col [span]="24" class="search-label">
+            {{ ("Model." + item.name) | I18n | async}}
+          </div>
+          <at-form-control [span]="24">
+            <ng-container [ngSwitch]="item.type">
+              <input class="search-input" *ngSwitchCase="'input'" at-input
+                     [(ngModel)]="search_params['search[like_'+item.key +']']">
+              <atInput class="search-input" *ngSwitchCase="'number'"
+                       [atType]="'number'"
+                       [(ngModel)]="search_params['search['+item.key +']']">
+              </atInput>
+              <at-select [multiple]="item.multiple" [(ngModel)]="search_params['search['+item.key +']'+ (item.multiple ? '[]' : '')]"
+                         *ngSwitchCase="'select'"
+                         style="width: 290px">
+                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
+                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
+                           [atLabel]="option.name"
+                           [atValue]="option.value">
+                </at-option>
+              </at-select>
+              <ng-container *ngSwitchCase="'range'">
+                <div at-row>
+                  <div at-col [span]="11">
+                    <atDatetimePicker [ngModel]="range_keys[item.key]?.before"
+                                      [inputIcon]="'calendar'"
+                                      (ngModelChange)="setRange($event,item.key,'before')"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
+                  </div>
+                  <div at-col [span]="1" style="  left: 1%;position: relative">
+                    <at-divider [height]="3"></at-divider>
+                  </div>
+                  <div at-col [span]="11" [offset]="1">
+                    <atDatetimePicker [ngModel]="range_keys[item.key]?.after"
+                                      [inputIcon]="'calendar'"
+                                      (ngModelChange)="setRange($event,item.key,'after')"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"
+                                      [disableDate]="range_keys[item.key]?.before"></atDatetimePicker>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+          </at-form-control>
+        </at-form-item>
+
+      </div>
+    </ng-template>
+
+    <ng-template #edit_template let-item let-bind="bind">
+      <div *ngFor="let item of edit_columns;let i =index" at-col [span]="24">
+        <at-form-item>
+          <div at-col [span]="24" class="search-label">
+            {{ ("Model." + item.name) | I18n | async}}
+          </div>
+          <at-form-control [span]="24">
+            <ng-container [ngSwitch]="item.type">
+              <input class="search-input" *ngSwitchCase="'input'" at-input
+                     [(ngModel)]="edit_params[item.key]">
+              <atInput class="search-input" *ngSwitchCase="'number'"
+                       [atType]="'number'"
+                       [(ngModel)]="edit_params[item.key]">
+              </atInput>
+              <at-select [multiple]="item.multiple" [(ngModel)]="edit_params[item.key]" *ngSwitchCase="'select'"
+                         style="width: 290px">
+                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
+                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
+                           [atLabel]="option.name"
+                           [atValue]="option.value">
+                </at-option>
+              </at-select>
+              <ng-container *ngSwitchCase="'date'">
+                <div at-row>
+                  <div at-col [span]="24">
+                    <atDatetimePicker [(ngModel)]="edit_params[item.key]"
+                                      [inputIcon]="'calendar'"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+          </at-form-control>
+        </at-form-item>
+
+      </div>
+    </ng-template>
   `,
   providers: [{
     provide: NG_VALUE_ACCESSOR,
@@ -200,6 +256,11 @@ export class SearchGroupComponent implements OnInit, ControlValueAccessor {
   // tslint:disable-next-line:no-any
   @Input() extra_search: TemplateRef<{ $implicit: any }>;
 
+  // tslint:disable-next-line:no-any
+  @Output() readonly update: EventEmitter<any> = new EventEmitter();
+
+  @Output() readonly delete: EventEmitter<void> = new EventEmitter();
+
   created_at_before = '';
 
   created_at_after = '';
@@ -212,8 +273,15 @@ export class SearchGroupComponent implements OnInit, ControlValueAccessor {
 
   range_keys = {};
 
+  edit_params = {};
+
   constructor() {
   }
+
+  visible = false;
+
+  @Input()
+  edit_columns: SearchColumn [] = [];
 
   onChange: (value: { [x: string]: string }) => void = () => null;
   onTouched: () => void = () => null;
@@ -239,6 +307,10 @@ export class SearchGroupComponent implements OnInit, ControlValueAccessor {
     this.onSearch.emit();
   }
 
+  close(): void {
+    this.visible = false;
+  }
+
   reset(): void {
     this.search_params = {};
     this.created_at_before = '';
@@ -248,6 +320,10 @@ export class SearchGroupComponent implements OnInit, ControlValueAccessor {
     this.range_keys = {};
     this.onChange(this.search_params);
 
+  }
+
+  edit(): void {
+    this.visible = true;
   }
 
   changeCreate($event: string, after: string): void {
@@ -267,5 +343,14 @@ export class SearchGroupComponent implements OnInit, ControlValueAccessor {
     this.range_keys[key][after] = value;
     this.search_params[`search[between_${key}]`] = `${this.range_keys[key].before} , ${this.range_keys[key].after}`;
     this.onChange(this.search_params);
+  }
+
+  batchUpdate(): void {
+    this.update.emit(this.edit_params);
+    this.visible = false;
+  }
+
+  batchDelete(): void {
+    this.delete.emit();
   }
 }

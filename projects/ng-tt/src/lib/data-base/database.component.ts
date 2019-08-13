@@ -10,6 +10,8 @@ export class DataBaseComponent<T = AnyObject> implements OnInit {
   total_pages: number;
   editing_data = {};
   datas: T[];
+  checkIndexes = [];
+  checkAll = false;
 
   get page(): number {
     return +this._page;
@@ -45,6 +47,8 @@ export class DataBaseComponent<T = AnyObject> implements OnInit {
 
   setData(key: string, data: AnyObject): void {
     this.datas = data[key] || [];
+    this.checkIndexes = this.datas.map(x => false);
+    this.checkAll = false;
     this.total_count = data.total_count;
     this.total_pages = data.total_pages;
   }

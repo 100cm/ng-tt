@@ -29,13 +29,18 @@ export declare class SearchGroupComponent implements OnInit, ControlValueAccesso
     extra_search: TemplateRef<{
         $implicit: any;
     }>;
+    readonly update: EventEmitter<any>;
+    readonly delete: EventEmitter<void>;
     created_at_before: string;
     created_at_after: string;
     updated_at_before: string;
     updated_at_after: string;
     show_more: boolean;
     range_keys: {};
+    edit_params: {};
     constructor();
+    visible: boolean;
+    edit_columns: SearchColumn[];
     onChange: (value: {
         [x: string]: string;
     }) => void;
@@ -49,8 +54,12 @@ export declare class SearchGroupComponent implements OnInit, ControlValueAccesso
     }): void;
     ngOnInit(): void;
     search(): void;
+    close(): void;
     reset(): void;
+    edit(): void;
     changeCreate($event: string, after: string): void;
     changeUpdate($event: string, after: string): void;
     setRange(value: string, key: string, after: string): void;
+    batchUpdate(): void;
+    batchDelete(): void;
 }

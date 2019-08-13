@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
 import { DataBaseComponent } from '../../data-base/database.component';
-import { SearchParams } from '../../interfaces/any-object.interface';
+import { AnyObject, SearchParams } from '../../interfaces/any-object.interface';
+import { forkJoin } from 'rxjs';
 
 export interface CommonDataTableColumn {
   name: string;
@@ -16,11 +17,17 @@ export interface CommonDataTableColumn {
   selector: 'tt-common-data-table',
   template: `
     <tt-search-group [search_columns]="search_columns" [extra_search]="extra_search" [(ngModel)]="search_params"
+                     (delete)="deleteAll()"
+                     (update)="batchUpdate($event)"
+                     [edit_columns]="edit_columns"
                      (ngModelChange)="changeSearchParams()"
                      (onSearch)="search()"></tt-search-group>
     <at-table>
       <thead at-thead>
       <tr>
+        <th at-th [atWidth]="20">
+          <at-checkbox [(ngModel)]="checkAll" (changeCheck)="checkList($event)"></at-checkbox>
+        </th>
         <th *ngFor="let item of columns" at-th style="cursor: text;">
           <tt-i18n [t]="'Model.'+ Model+'.'+item.name"></tt-i18n>
         </th>
@@ -28,7 +35,10 @@ export interface CommonDataTableColumn {
       </tr>
       </thead>
       <tbody at-tbody>
-      <tr at-tbody-tr *ngFor="let item of datas"><!---->
+      <tr at-tbody-tr *ngFor="let item of datas;let i = index"><!---->
+        <td at-td>
+          <at-checkbox [(ngModel)]="checkIndexes[i]" (changeCheck)="changeCheckIndex($event)"></at-checkbox>
+        </td>
         <td at-td *ngFor="let column of columns">
           <ng-container *ngIf="column.resource_key">
             <a
@@ -56,7 +66,6 @@ export interface CommonDataTableColumn {
           <ng-template [ngTemplateOutlet]="handle_columns" [ngTemplateOutletContext]="{$implicit: item}"></ng-template>
         </td>
       </tr>
-
       </tbody>
       <div footer>
         <tt-empty-data [data]="datas"></tt-empty-data>
@@ -88,6 +97,7 @@ export class CommonDataTableComponent extends DataBaseComponent implements OnIni
   @Input() Model = '';
   @Input() resource = '';
   @Input() search_columns = [];
+  @Input() edit_columns = [];
   // tslint:disable-next-line:no-any
   @Input() handle_columns: TemplateRef<{ $implicit: any }>;
   // tslint:disable-next-line:no-any
@@ -116,6 +126,52 @@ export class CommonDataTableComponent extends DataBaseComponent implements OnIni
 
   get model(): string {
     return this.Model.toLowerCase();
+  }
+
+  changeCheckIndex(check: boolean): void {
+    this.checkAll = this.checkIndexes.filter(index => index === true).length === this.datas.length;
+  }
+
+  checkList(value: boolean): void {
+    this.checkIndexes = this.checkIndexes.map(index => value);
+  }
+
+  deleteAll(): void {
+    // const obs = [];
+    // this.checkIndexes.forEach((checked: boolean, index: number) => {
+    //   if (checked === true) {
+    //     const id = this.datas[index].id;
+    //     const params = {
+    //     };
+    //     params[`${this.model}_id`] = id;
+    //     this.data_service.delete().subscribe(data => {
+    //       this.setData(this.resource, data);
+    //     });
+    //   }
+    // });
+
+  }
+
+  batchUpdate(update_params: AnyObject): void {
+    const obs = [];
+    this.checkIndexes.forEach((checked: boolean, index: number) => {
+      if (checked === true) {
+        for (const key in update_params) {
+          if (update_params[key] === '') {
+            delete update_params[key];
+          }
+        }
+        const id = this.datas[index].id;
+        const params = {
+          update: update_params
+        };
+        params[`${this.model}_id`] = id;
+        obs.push(this.data_service.update(params));
+      }
+    });
+    forkJoin(obs).subscribe(data => {
+      console.log(data);
+    });
   }
 
 }

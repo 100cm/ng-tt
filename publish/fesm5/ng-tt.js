@@ -3,7 +3,7 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpUrlEncodingCodec, HttpHeaders, HttpParams, HttpClient, HttpResponse, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { InjectionToken, Injectable, Inject, PLATFORM_ID, ɵɵdefineInjectable, ɵɵinject, NgModule, Component, Input, Optional, SkipSelf, EventEmitter, Output, Pipe, forwardRef } from '@angular/core';
 import { isObject, isDate, isUndefined } from 'lodash';
-import { from, BehaviorSubject } from 'rxjs';
+import { from, BehaviorSubject, forkJoin } from 'rxjs';
 import { switchMap, filter, map } from 'rxjs/operators';
 import { Router, RouterModule } from '@angular/router';
 import { AT_I18N, zh_CN, AtModule } from 'at-ng';
@@ -882,6 +882,8 @@ DataBaseComponent = /** @class */ (function () {
         this._page = '1';
         this._per = '10';
         this.editing_data = {};
+        this.checkIndexes = [];
+        this.checkAll = false;
         this.search_params = {};
         this.search_columns = [];
         this.columns = [];
@@ -957,6 +959,12 @@ DataBaseComponent = /** @class */ (function () {
      */
     function (key, data) {
         this.datas = data[key] || [];
+        this.checkIndexes = this.datas.map((/**
+         * @param {?} x
+         * @return {?}
+         */
+        function (x) { return false; }));
+        this.checkAll = false;
         this.total_count = data.total_count;
         this.total_pages = data.total_pages;
     };
@@ -1020,6 +1028,7 @@ var CommonDataTableComponent = /** @class */ (function (_super) {
         _this.Model = '';
         _this.resource = '';
         _this.search_columns = [];
+        _this.edit_columns = [];
         _this.prefixRoute = '/dashboard';
         // 搜索参数
         _this.search_params = {};
@@ -1081,10 +1090,102 @@ var CommonDataTableComponent = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
+    /**
+     * @param {?} check
+     * @return {?}
+     */
+    CommonDataTableComponent.prototype.changeCheckIndex = /**
+     * @param {?} check
+     * @return {?}
+     */
+    function (check) {
+        this.checkAll = this.checkIndexes.filter((/**
+         * @param {?} index
+         * @return {?}
+         */
+        function (index) { return index === true; })).length === this.datas.length;
+    };
+    /**
+     * @param {?} value
+     * @return {?}
+     */
+    CommonDataTableComponent.prototype.checkList = /**
+     * @param {?} value
+     * @return {?}
+     */
+    function (value) {
+        this.checkIndexes = this.checkIndexes.map((/**
+         * @param {?} index
+         * @return {?}
+         */
+        function (index) { return value; }));
+    };
+    /**
+     * @return {?}
+     */
+    CommonDataTableComponent.prototype.deleteAll = /**
+     * @return {?}
+     */
+    function () {
+        // const obs = [];
+        // this.checkIndexes.forEach((checked: boolean, index: number) => {
+        //   if (checked === true) {
+        //     const id = this.datas[index].id;
+        //     const params = {
+        //     };
+        //     params[`${this.model}_id`] = id;
+        //     this.data_service.delete().subscribe(data => {
+        //       this.setData(this.resource, data);
+        //     });
+        //   }
+        // });
+    };
+    /**
+     * @param {?} update_params
+     * @return {?}
+     */
+    CommonDataTableComponent.prototype.batchUpdate = /**
+     * @param {?} update_params
+     * @return {?}
+     */
+    function (update_params) {
+        var _this = this;
+        /** @type {?} */
+        var obs = [];
+        this.checkIndexes.forEach((/**
+         * @param {?} checked
+         * @param {?} index
+         * @return {?}
+         */
+        function (checked, index) {
+            if (checked === true) {
+                for (var key in update_params) {
+                    if (update_params[key] === '') {
+                        delete update_params[key];
+                    }
+                }
+                /** @type {?} */
+                var id = _this.datas[index].id;
+                /** @type {?} */
+                var params = {
+                    update: update_params
+                };
+                params[_this.model + "_id"] = id;
+                obs.push(_this.data_service.update(params));
+            }
+        }));
+        forkJoin(obs).subscribe((/**
+         * @param {?} data
+         * @return {?}
+         */
+        function (data) {
+            console.log(data);
+        }));
+    };
     CommonDataTableComponent.decorators = [
         { type: Component, args: [{
                     selector: 'tt-common-data-table',
-                    template: "\n    <tt-search-group [search_columns]=\"search_columns\" [extra_search]=\"extra_search\" [(ngModel)]=\"search_params\"\n                     (ngModelChange)=\"changeSearchParams()\"\n                     (onSearch)=\"search()\"></tt-search-group>\n    <at-table>\n      <thead at-thead>\n      <tr>\n        <th *ngFor=\"let item of columns\" at-th style=\"cursor: text;\">\n          <tt-i18n [t]=\"'Model.'+ Model+'.'+item.name\"></tt-i18n>\n        </th>\n        <th at-th>\u64CD\u4F5C</th>\n      </tr>\n      </thead>\n      <tbody at-tbody>\n      <tr at-tbody-tr *ngFor=\"let item of datas\"><!---->\n        <td at-td *ngFor=\"let column of columns\">\n          <ng-container *ngIf=\"column.resource_key\">\n            <a\n              [routerLink]=\"prefixRoute +'/'+column.resource +'/' + (item | nestedJsonKey : column.resource_key)\">\n              {{item | nestedJsonKey : column.key}}</a>\n          </ng-container>\n          <ng-container *ngIf=\"!column.resource_key\">\n            <ng-container *ngIf=\"column.array\">\n              <ng-container\n                *ngFor=\"let column_array_item of  (item | nestedJsonKey : column.key);last as isLast\">\n                <span>{{column.dictionary ? column.dictionary[column_array_item[column.array_key]] : column_array_item[column.array_key]}} </span>\n                <at-divider [vertical]=\"true\" *ngIf=\"!isLast\"></at-divider>\n              </ng-container>\n            </ng-container>\n            <ng-container *ngIf=\"!column.array\">\n              {{column.dictionary ? column.dictionary[(item | nestedJsonKey : column.key)] : (item | nestedJsonKey : column.key)}}\n            </ng-container>\n          </ng-container>\n        </td>\n        <td at-td>\n          <a [routerLink]=\"prefixRoute +'/'+resource +'/edit/' + item.id\">\n            <tt-i18n [t]=\"'Model.Handle.edit'\"></tt-i18n>\n          </a>\n          <at-divider [vertical]=\"true\" *ngIf=\"handle_columns\"></at-divider>\n          <ng-template [ngTemplateOutlet]=\"handle_columns\" [ngTemplateOutletContext]=\"{$implicit: item}\"></ng-template>\n        </td>\n      </tr>\n\n      </tbody>\n      <div footer>\n        <tt-empty-data [data]=\"datas\"></tt-empty-data>\n        <div class=\"page-container\">\n          <at-pagination [atPageSizer]=\"true\" (pageSizeChange)=\"pageSizeChange($event)\" [pageSize]=\"per\"\n                         [atQuickJump]=\"true\"\n                         [atPageIndex]=\"page\"\n                         [total]=\"total_count\"\n                         (pageIndexChange)=\"pageChange($event)\"></at-pagination>\n        </div>\n      </div>\n    </at-table>\n  ",
+                    template: "\n    <tt-search-group [search_columns]=\"search_columns\" [extra_search]=\"extra_search\" [(ngModel)]=\"search_params\"\n                     (delete)=\"deleteAll()\"\n                     (update)=\"batchUpdate($event)\"\n                     [edit_columns]=\"edit_columns\"\n                     (ngModelChange)=\"changeSearchParams()\"\n                     (onSearch)=\"search()\"></tt-search-group>\n    <at-table>\n      <thead at-thead>\n      <tr>\n        <th at-th [atWidth]=\"20\">\n          <at-checkbox [(ngModel)]=\"checkAll\" (changeCheck)=\"checkList($event)\"></at-checkbox>\n        </th>\n        <th *ngFor=\"let item of columns\" at-th style=\"cursor: text;\">\n          <tt-i18n [t]=\"'Model.'+ Model+'.'+item.name\"></tt-i18n>\n        </th>\n        <th at-th>\u64CD\u4F5C</th>\n      </tr>\n      </thead>\n      <tbody at-tbody>\n      <tr at-tbody-tr *ngFor=\"let item of datas;let i = index\"><!---->\n        <td at-td>\n          <at-checkbox [(ngModel)]=\"checkIndexes[i]\" (changeCheck)=\"changeCheckIndex($event)\"></at-checkbox>\n        </td>\n        <td at-td *ngFor=\"let column of columns\">\n          <ng-container *ngIf=\"column.resource_key\">\n            <a\n              [routerLink]=\"prefixRoute +'/'+column.resource +'/' + (item | nestedJsonKey : column.resource_key)\">\n              {{item | nestedJsonKey : column.key}}</a>\n          </ng-container>\n          <ng-container *ngIf=\"!column.resource_key\">\n            <ng-container *ngIf=\"column.array\">\n              <ng-container\n                *ngFor=\"let column_array_item of  (item | nestedJsonKey : column.key);last as isLast\">\n                <span>{{column.dictionary ? column.dictionary[column_array_item[column.array_key]] : column_array_item[column.array_key]}} </span>\n                <at-divider [vertical]=\"true\" *ngIf=\"!isLast\"></at-divider>\n              </ng-container>\n            </ng-container>\n            <ng-container *ngIf=\"!column.array\">\n              {{column.dictionary ? column.dictionary[(item | nestedJsonKey : column.key)] : (item | nestedJsonKey : column.key)}}\n            </ng-container>\n          </ng-container>\n        </td>\n        <td at-td>\n          <a [routerLink]=\"prefixRoute +'/'+resource +'/edit/' + item.id\">\n            <tt-i18n [t]=\"'Model.Handle.edit'\"></tt-i18n>\n          </a>\n          <at-divider [vertical]=\"true\" *ngIf=\"handle_columns\"></at-divider>\n          <ng-template [ngTemplateOutlet]=\"handle_columns\" [ngTemplateOutletContext]=\"{$implicit: item}\"></ng-template>\n        </td>\n      </tr>\n      </tbody>\n      <div footer>\n        <tt-empty-data [data]=\"datas\"></tt-empty-data>\n        <div class=\"page-container\">\n          <at-pagination [atPageSizer]=\"true\" (pageSizeChange)=\"pageSizeChange($event)\" [pageSize]=\"per\"\n                         [atQuickJump]=\"true\"\n                         [atPageIndex]=\"page\"\n                         [total]=\"total_count\"\n                         (pageIndexChange)=\"pageChange($event)\"></at-pagination>\n        </div>\n      </div>\n    </at-table>\n  ",
                     styles: [""]
                 }] }
     ];
@@ -1096,6 +1197,7 @@ var CommonDataTableComponent = /** @class */ (function (_super) {
         Model: [{ type: Input }],
         resource: [{ type: Input }],
         search_columns: [{ type: Input }],
+        edit_columns: [{ type: Input }],
         handle_columns: [{ type: Input }],
         extra_search: [{ type: Input }],
         prefixRoute: [{ type: Input }],
@@ -1208,12 +1310,18 @@ var SearchGroupComponent = /** @class */ (function () {
         this.search_columns = [];
         this.search_params = {};
         this.onSearch = new EventEmitter();
+        // tslint:disable-next-line:no-any
+        this.update = new EventEmitter();
+        this.delete = new EventEmitter();
         this.created_at_before = '';
         this.created_at_after = '';
         this.updated_at_before = '';
         this.updated_at_after = '';
         this.show_more = false;
         this.range_keys = {};
+        this.edit_params = {};
+        this.visible = false;
+        this.edit_columns = [];
         this.onChange = (/**
          * @return {?}
          */
@@ -1278,6 +1386,15 @@ var SearchGroupComponent = /** @class */ (function () {
     /**
      * @return {?}
      */
+    SearchGroupComponent.prototype.close = /**
+     * @return {?}
+     */
+    function () {
+        this.visible = false;
+    };
+    /**
+     * @return {?}
+     */
     SearchGroupComponent.prototype.reset = /**
      * @return {?}
      */
@@ -1289,6 +1406,15 @@ var SearchGroupComponent = /** @class */ (function () {
         this.updated_at_after = '';
         this.range_keys = {};
         this.onChange(this.search_params);
+    };
+    /**
+     * @return {?}
+     */
+    SearchGroupComponent.prototype.edit = /**
+     * @return {?}
+     */
+    function () {
+        this.visible = true;
     };
     /**
      * @param {?} $event
@@ -1338,10 +1464,29 @@ var SearchGroupComponent = /** @class */ (function () {
         this.search_params["search[between_" + key + "]"] = this.range_keys[key].before + " , " + this.range_keys[key].after;
         this.onChange(this.search_params);
     };
+    /**
+     * @return {?}
+     */
+    SearchGroupComponent.prototype.batchUpdate = /**
+     * @return {?}
+     */
+    function () {
+        this.update.emit(this.edit_params);
+        this.visible = false;
+    };
+    /**
+     * @return {?}
+     */
+    SearchGroupComponent.prototype.batchDelete = /**
+     * @return {?}
+     */
+    function () {
+        this.delete.emit();
+    };
     SearchGroupComponent.decorators = [
         { type: Component, args: [{
                     selector: 'tt-search-group',
-                    template: "\n    <div at-row class=\"search-bar-container\">\n      <div *ngFor=\"let item of search_columns;let i =index\" at-col [span]=\"item.type ==='range'? 11 : 5\"\n           [offset]=\" ((i) % 4) == 0 ? 0 : 1\">\n        <at-form-item>\n          <div at-col [span]=\"24\" class=\"search-label\">\n            {{ (\"Model.\" + item.name) | I18n | async}}\n          </div>\n          <at-form-control [span]=\"24\">\n            <ng-container [ngSwitch]=\"item.type\">\n              <input class=\"search-input\" *ngSwitchCase=\"'input'\" at-input\n                     [(ngModel)]=\"search_params['search[like_'+item.key +']']\">\n              <atInput class=\"search-input\" *ngSwitchCase=\"'number'\"\n                       [atType]=\"'number'\"\n                       [(ngModel)]=\"search_params['search['+item.key +']']\">\n              </atInput>\n              <at-select [multiple]=\"item.multiple\" [(ngModel)]=\"search_params['search['+item.key +']']\" *ngSwitchCase=\"'select'\"\n                         style=\"width: 290px\">\n                <at-option [atLabel]=\"'DataSource.all' | I18n | async\" [atValue]=\"''\"></at-option>\n                <at-option *ngFor=\"let option of  item.async ? (item.data_source | async) : item.data_source\"\n                           [atLabel]=\"option.name\"\n                           [atValue]=\"option.value\">\n                </at-option>\n              </at-select>\n              <ng-container *ngSwitchCase=\"'range'\">\n                <div at-row>\n                  <div at-col [span]=\"11\">\n                    <atDatetimePicker [ngModel]=\"range_keys[item.key]?.before\"\n                                      [inputIcon]=\"'calendar'\"\n                                      (ngModelChange)=\"setRange($event,item.key,'before')\"\n                                      [format]=\"'YYYY-MM-DD HH:mm:ss'\"></atDatetimePicker>\n                  </div>\n                  <div at-col [span]=\"1\" style=\"  left: 1%;position: relative\">\n                    <at-divider [height]=\"3\"></at-divider>\n                  </div>\n                  <div at-col [span]=\"11\" [offset]=\"1\">\n                    <atDatetimePicker [ngModel]=\"range_keys[item.key]?.after\"\n                                      [inputIcon]=\"'calendar'\"\n                                      (ngModelChange)=\"setRange($event,item.key,'after')\"\n                                      [format]=\"'YYYY-MM-DD HH:mm:ss'\"\n                                      [disableDate]=\"range_keys[item.key]?.before\"></atDatetimePicker>\n                  </div>\n                </div>\n              </ng-container>\n            </ng-container>\n          </at-form-control>\n        </at-form-item>\n\n      </div>\n      <ng-template [ngTemplateOutlet]=\"extra_search\"></ng-template>\n      <div at-col [span]=\"24\">\n        <div style=\"margin-bottom: 24px\">\n          <at-checkbox [label]=\"'Button.more_filter' | I18n | async\" [(ngModel)]=\"show_more\">\n          </at-checkbox>\n        </div>\n      </div>\n      <div *ngIf=\"show_more\" at-col [span]=\"24\">\n        <div at-row>\n          <div at-col [span]=\"11\">\n            <at-form-item>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col [span]=\"24\" class=\"search-label\">\n                    <tt-i18n [t]=\"'Model.Common.created_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"created_at_before\" [format]=\"'YYYY-MM-DD'\"\n                      (ngModelChange)=\"changeCreate($event,'after')\"\n                      [choice_modal]=\"'date'\"></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n              <div at-col [span]=\"2\" class=\"middle-line\">\n                <at-divider [height]=\"3\"></at-divider>\n              </div>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col class=\"search-label\" [span]=\"24\">\n                    <tt-i18n [t]=\"'Model.Common.created_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"created_at_after\" [disableDate]=\"created_at_before\"\n                      (ngModelChange)=\"changeCreate($event,'after')\"\n                      [choice_modal]=\"'date'\"\n                      [format]=\"'YYYY-MM-DD'\"\n                    ></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n            </at-form-item>\n          </div>\n          <div at-col [span]=\"11\" [offset]=\"1\">\n            <at-form-item>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col [span]=\"24\" class=\"search-label\">\n                    <tt-i18n [t]=\"'Model.Common.updated_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"updated_at_before\" [format]=\"'YYYY-MM-DD'\"\n                      (ngModelChange)=\"changeUpdate($event,'after')\"\n                      [choice_modal]=\"'date'\"></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n              <div at-col [span]=\"2\" class=\"middle-line\">\n                <at-divider [height]=\"3\"></at-divider>\n              </div>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col class=\"search-label\" [span]=\"24\">\n                    <tt-i18n [t]=\"'Model.Common.updated_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"updated_at_after\" [disableDate]=\"updated_at_before\"\n                      (ngModelChange)=\"changeUpdate($event,'after')\"\n                      [choice_modal]=\"'date'\"\n                      [format]=\"'YYYY-MM-DD'\"\n                    ></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n            </at-form-item>\n          </div>\n        </div>\n      </div>\n\n      <div at-col [span]=\"24\">\n        <div style=\"margin-bottom: 24px\">\n          <button at-button (click)=\"search()\" [atType]=\"'primary'\">\n            <span><tt-i18n [t]=\"'Button.search'\"></tt-i18n></span>\n          </button>\n          <at-divider [vertical]=\"true\" [height]=\"20\"></at-divider>\n          <button at-button (click)=\"reset()\" [atType]=\"'primary'\" hollow>\n        <span>\n        <tt-i18n [t]=\"'Button.reset'\"></tt-i18n>\n      </span>\n          </button>\n          <ng-template [ngTemplateOutlet]=\"buttons\" ></ng-template>\n        </div>\n      </div>\n    </div>\n    <!--<div at-row class=\"filter-container\">-->\n    <!--<at-dropdown [trigger]=\"'click'\" [autoClose]=\"false\">-->\n    <!--<button at-dropdown at-button><span>\u7B5B\u9009\u5217\u8868</span></button>-->\n    <!--<ul at-drop-menu-list>-->\n    <!--<li at-drop-menu-item *ngFor=\"let item of search_columns\">-->\n    <!--{{ (\"Model.\" + item.name) | I18n | async}}-->\n    <!--</li>-->\n    <!--</ul>-->\n    <!--</at-dropdown>-->\n    <!--</div>-->\n  ",
+                    template: "\n    <div at-row class=\"search-bar-container\">\n      <ng-template [ngTemplateOutlet]=\"search_template\"></ng-template>\n      <ng-template [ngTemplateOutlet]=\"extra_search\"></ng-template>\n      <div at-col [span]=\"24\">\n        <div style=\"margin-bottom: 24px\">\n          <at-checkbox [label]=\"'Button.more_filter' | I18n | async\" [(ngModel)]=\"show_more\">\n          </at-checkbox>\n        </div>\n      </div>\n      <div *ngIf=\"show_more\" at-col [span]=\"24\">\n        <div at-row>\n          <div at-col [span]=\"11\">\n            <at-form-item>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col [span]=\"24\" class=\"search-label\">\n                    <tt-i18n [t]=\"'Model.Common.created_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"created_at_before\" [format]=\"'YYYY-MM-DD'\"\n                      (ngModelChange)=\"changeCreate($event,'after')\"\n                      [choice_modal]=\"'date'\"></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n              <div at-col [span]=\"2\" class=\"middle-line\">\n                <at-divider [height]=\"3\"></at-divider>\n              </div>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col class=\"search-label\" [span]=\"24\">\n                    <tt-i18n [t]=\"'Model.Common.created_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"created_at_after\" [disableDate]=\"created_at_before\"\n                      (ngModelChange)=\"changeCreate($event,'after')\"\n                      [choice_modal]=\"'date'\"\n                      [format]=\"'YYYY-MM-DD'\"\n                    ></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n            </at-form-item>\n          </div>\n          <div at-col [span]=\"11\" [offset]=\"1\">\n            <at-form-item>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col [span]=\"24\" class=\"search-label\">\n                    <tt-i18n [t]=\"'Model.Common.updated_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"updated_at_before\" [format]=\"'YYYY-MM-DD'\"\n                      (ngModelChange)=\"changeUpdate($event,'after')\"\n                      [choice_modal]=\"'date'\"></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n              <div at-col [span]=\"2\" class=\"middle-line\">\n                <at-divider [height]=\"3\"></at-divider>\n              </div>\n              <div at-col [span]=\"11\">\n                <div at-row>\n                  <div at-col class=\"search-label\" [span]=\"24\">\n                    <tt-i18n [t]=\"'Model.Common.updated_at'\"></tt-i18n>\n                  </div>\n                  <at-form-control [span]=\"24\">\n                    <atDatetimePicker\n                      [inputIcon]=\"'calendar'\"\n                      [(ngModel)]=\"updated_at_after\" [disableDate]=\"updated_at_before\"\n                      (ngModelChange)=\"changeUpdate($event,'after')\"\n                      [choice_modal]=\"'date'\"\n                      [format]=\"'YYYY-MM-DD'\"\n                    ></atDatetimePicker>\n                  </at-form-control>\n                </div>\n              </div>\n            </at-form-item>\n          </div>\n        </div>\n      </div>\n\n      <div at-col [span]=\"24\">\n        <div style=\"margin-bottom: 24px\">\n          <button at-button (click)=\"search()\" [atType]=\"'primary'\">\n            <span><tt-i18n [t]=\"'Button.search'\"></tt-i18n></span>\n          </button>\n          <at-divider [vertical]=\"true\" [height]=\"20\"></at-divider>\n          <button at-button (click)=\"reset()\" [atType]=\"'primary'\" hollow>\n            <span>\n        <tt-i18n [t]=\"'Button.reset'\"></tt-i18n>\n      </span>\n          </button>\n          <at-divider [vertical]=\"true\" [height]=\"20\"></at-divider>\n          <button at-button (click)=\"edit()\" [atType]=\"'primary'\">\n            <span>\u6279\u91CF\u7F16\u8F91</span>\n          </button>\n          <ng-template [ngTemplateOutlet]=\"buttons\"></ng-template>\n        </div>\n      </div>\n    </div>\n    <!--<div at-row class=\"filter-container\">-->\n    <!--<at-dropdown [trigger]=\"'click'\" [autoClose]=\"false\">-->\n    <!--<button at-dropdown at-button><span>\u7B5B\u9009\u5217\u8868</span></button>-->\n    <!--<ul at-drop-menu-list>-->\n    <!--<li at-drop-menu-item *ngFor=\"let item of search_columns\">-->\n    <!--{{ (\"Model.\" + item.name) | I18n | async}}-->\n    <!--</li>-->\n    <!--</ul>-->\n    <!--</at-dropdown>-->\n    <!--</div>-->\n\n    <at-drawer [atClosable]=\"true\" [atVisible]=\"visible\" (atOnClose)=\"close()\" atPlacement=\"right\" [atTitle]=\"drawer_title\" [atWidth]=\"320\">\n      <ng-template [ngTemplateOutlet]=\"edit_template\"></ng-template>\n    </at-drawer>\n    <ng-template #drawer_title>\n      <button at-button (click)=\"batchUpdate()\" [atType]=\"'primary'\"> \u6279\u91CF\u66F4\u65B0</button>\n      <!--<at-divider [vertical]=\"true\" [height]=\"20\"></at-divider>-->\n      <!--<button at-button (click)=\"batchDelete()\" [atType]=\"'error'\" hollow> \u6279\u91CF\u5220\u9664</button>-->\n    </ng-template>\n\n    <ng-template #search_template let-item let-bind=\"bind\">\n      <div *ngFor=\"let item of search_columns;let i =index\" at-col [span]=\"item.type ==='range'? 11 : 5\"\n           [offset]=\" ((i) % 4) == 0 ? 0 : 1\">\n        <at-form-item>\n          <div at-col [span]=\"24\" class=\"search-label\">\n            {{ (\"Model.\" + item.name) | I18n | async}}\n          </div>\n          <at-form-control [span]=\"24\">\n            <ng-container [ngSwitch]=\"item.type\">\n              <input class=\"search-input\" *ngSwitchCase=\"'input'\" at-input\n                     [(ngModel)]=\"search_params['search[like_'+item.key +']']\">\n              <atInput class=\"search-input\" *ngSwitchCase=\"'number'\"\n                       [atType]=\"'number'\"\n                       [(ngModel)]=\"search_params['search['+item.key +']']\">\n              </atInput>\n              <at-select [multiple]=\"item.multiple\" [(ngModel)]=\"search_params['search['+item.key +']'+ (item.multiple ? '[]' : '')]\"\n                         *ngSwitchCase=\"'select'\"\n                         style=\"width: 290px\">\n                <at-option *ngIf=\"!item.multiple\" [atLabel]=\"'DataSource.all' | I18n | async\" [atValue]=\"''\"></at-option>\n                <at-option *ngFor=\"let option of  item.async ? (item.data_source | async) : item.data_source\"\n                           [atLabel]=\"option.name\"\n                           [atValue]=\"option.value\">\n                </at-option>\n              </at-select>\n              <ng-container *ngSwitchCase=\"'range'\">\n                <div at-row>\n                  <div at-col [span]=\"11\">\n                    <atDatetimePicker [ngModel]=\"range_keys[item.key]?.before\"\n                                      [inputIcon]=\"'calendar'\"\n                                      (ngModelChange)=\"setRange($event,item.key,'before')\"\n                                      [format]=\"'YYYY-MM-DD HH:mm:ss'\"></atDatetimePicker>\n                  </div>\n                  <div at-col [span]=\"1\" style=\"  left: 1%;position: relative\">\n                    <at-divider [height]=\"3\"></at-divider>\n                  </div>\n                  <div at-col [span]=\"11\" [offset]=\"1\">\n                    <atDatetimePicker [ngModel]=\"range_keys[item.key]?.after\"\n                                      [inputIcon]=\"'calendar'\"\n                                      (ngModelChange)=\"setRange($event,item.key,'after')\"\n                                      [format]=\"'YYYY-MM-DD HH:mm:ss'\"\n                                      [disableDate]=\"range_keys[item.key]?.before\"></atDatetimePicker>\n                  </div>\n                </div>\n              </ng-container>\n            </ng-container>\n          </at-form-control>\n        </at-form-item>\n\n      </div>\n    </ng-template>\n\n    <ng-template #edit_template let-item let-bind=\"bind\">\n      <div *ngFor=\"let item of edit_columns;let i =index\" at-col [span]=\"24\">\n        <at-form-item>\n          <div at-col [span]=\"24\" class=\"search-label\">\n            {{ (\"Model.\" + item.name) | I18n | async}}\n          </div>\n          <at-form-control [span]=\"24\">\n            <ng-container [ngSwitch]=\"item.type\">\n              <input class=\"search-input\" *ngSwitchCase=\"'input'\" at-input\n                     [(ngModel)]=\"edit_params[item.key]\">\n              <atInput class=\"search-input\" *ngSwitchCase=\"'number'\"\n                       [atType]=\"'number'\"\n                       [(ngModel)]=\"edit_params[item.key]\">\n              </atInput>\n              <at-select [multiple]=\"item.multiple\" [(ngModel)]=\"edit_params[item.key]\" *ngSwitchCase=\"'select'\"\n                         style=\"width: 290px\">\n                <at-option *ngIf=\"!item.multiple\" [atLabel]=\"'DataSource.all' | I18n | async\" [atValue]=\"''\"></at-option>\n                <at-option *ngFor=\"let option of  item.async ? (item.data_source | async) : item.data_source\"\n                           [atLabel]=\"option.name\"\n                           [atValue]=\"option.value\">\n                </at-option>\n              </at-select>\n              <ng-container *ngSwitchCase=\"'date'\">\n                <div at-row>\n                  <div at-col [span]=\"24\">\n                    <atDatetimePicker [(ngModel)]=\"edit_params[item.key]\"\n                                      [inputIcon]=\"'calendar'\"\n                                      [format]=\"'YYYY-MM-DD HH:mm:ss'\"></atDatetimePicker>\n                  </div>\n                </div>\n              </ng-container>\n            </ng-container>\n          </at-form-control>\n        </at-form-item>\n\n      </div>\n    </ng-template>\n  ",
                     providers: [{
                             provide: NG_VALUE_ACCESSOR,
                             useExisting: forwardRef((/**
@@ -1360,7 +1505,10 @@ var SearchGroupComponent = /** @class */ (function () {
         extra_form: [{ type: Input }],
         onSearch: [{ type: Output }],
         buttons: [{ type: Input }],
-        extra_search: [{ type: Input }]
+        extra_search: [{ type: Input }],
+        update: [{ type: Output }],
+        delete: [{ type: Output }],
+        edit_columns: [{ type: Input }]
     };
     return SearchGroupComponent;
 }());

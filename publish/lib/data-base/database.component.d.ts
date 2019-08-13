@@ -8,6 +8,8 @@ export declare class DataBaseComponent<T = AnyObject> implements OnInit {
     total_pages: number;
     editing_data: {};
     datas: T[];
+    checkIndexes: any[];
+    checkAll: boolean;
     page: number;
     per: number;
     search_params: {};

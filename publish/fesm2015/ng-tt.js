@@ -2,7 +2,7 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpParams, HttpHeaders, HttpClient, HttpUrlEncodingCodec, HttpResponse, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { InjectionToken, Injectable, Inject, PLATFORM_ID, ɵɵdefineInjectable, ɵɵinject, NgModule, Component, Input, Optional, SkipSelf, EventEmitter, Output, Pipe, forwardRef } from '@angular/core';
 import { isObject, isDate, isUndefined } from 'lodash';
-import { from, BehaviorSubject } from 'rxjs';
+import { from, BehaviorSubject, forkJoin } from 'rxjs';
 import { switchMap, filter, map } from 'rxjs/operators';
 import { Router, RouterModule } from '@angular/router';
 import { AT_I18N, zh_CN, AtModule } from 'at-ng';
@@ -673,6 +673,8 @@ class DataBaseComponent {
         this._page = '1';
         this._per = '10';
         this.editing_data = {};
+        this.checkIndexes = [];
+        this.checkAll = false;
         this.search_params = {};
         this.search_columns = [];
         this.columns = [];
@@ -726,6 +728,12 @@ class DataBaseComponent {
      */
     setData(key, data) {
         this.datas = data[key] || [];
+        this.checkIndexes = this.datas.map((/**
+         * @param {?} x
+         * @return {?}
+         */
+        x => false));
+        this.checkAll = false;
         this.total_count = data.total_count;
         this.total_pages = data.total_pages;
     }
@@ -771,6 +779,7 @@ class CommonDataTableComponent extends DataBaseComponent {
         this.Model = '';
         this.resource = '';
         this.search_columns = [];
+        this.edit_columns = [];
         this.prefixRoute = '/dashboard';
         // 搜索参数
         this.search_params = {};
@@ -814,17 +823,99 @@ class CommonDataTableComponent extends DataBaseComponent {
     get model() {
         return this.Model.toLowerCase();
     }
+    /**
+     * @param {?} check
+     * @return {?}
+     */
+    changeCheckIndex(check) {
+        this.checkAll = this.checkIndexes.filter((/**
+         * @param {?} index
+         * @return {?}
+         */
+        index => index === true)).length === this.datas.length;
+    }
+    /**
+     * @param {?} value
+     * @return {?}
+     */
+    checkList(value) {
+        this.checkIndexes = this.checkIndexes.map((/**
+         * @param {?} index
+         * @return {?}
+         */
+        index => value));
+    }
+    /**
+     * @return {?}
+     */
+    deleteAll() {
+        // const obs = [];
+        // this.checkIndexes.forEach((checked: boolean, index: number) => {
+        //   if (checked === true) {
+        //     const id = this.datas[index].id;
+        //     const params = {
+        //     };
+        //     params[`${this.model}_id`] = id;
+        //     this.data_service.delete().subscribe(data => {
+        //       this.setData(this.resource, data);
+        //     });
+        //   }
+        // });
+    }
+    /**
+     * @param {?} update_params
+     * @return {?}
+     */
+    batchUpdate(update_params) {
+        /** @type {?} */
+        const obs = [];
+        this.checkIndexes.forEach((/**
+         * @param {?} checked
+         * @param {?} index
+         * @return {?}
+         */
+        (checked, index) => {
+            if (checked === true) {
+                for (const key in update_params) {
+                    if (update_params[key] === '') {
+                        delete update_params[key];
+                    }
+                }
+                /** @type {?} */
+                const id = this.datas[index].id;
+                /** @type {?} */
+                const params = {
+                    update: update_params
+                };
+                params[`${this.model}_id`] = id;
+                obs.push(this.data_service.update(params));
+            }
+        }));
+        forkJoin(obs).subscribe((/**
+         * @param {?} data
+         * @return {?}
+         */
+        data => {
+            console.log(data);
+        }));
+    }
 }
 CommonDataTableComponent.decorators = [
     { type: Component, args: [{
                 selector: 'tt-common-data-table',
                 template: `
     <tt-search-group [search_columns]="search_columns" [extra_search]="extra_search" [(ngModel)]="search_params"
+                     (delete)="deleteAll()"
+                     (update)="batchUpdate($event)"
+                     [edit_columns]="edit_columns"
                      (ngModelChange)="changeSearchParams()"
                      (onSearch)="search()"></tt-search-group>
     <at-table>
       <thead at-thead>
       <tr>
+        <th at-th [atWidth]="20">
+          <at-checkbox [(ngModel)]="checkAll" (changeCheck)="checkList($event)"></at-checkbox>
+        </th>
         <th *ngFor="let item of columns" at-th style="cursor: text;">
           <tt-i18n [t]="'Model.'+ Model+'.'+item.name"></tt-i18n>
         </th>
@@ -832,7 +923,10 @@ CommonDataTableComponent.decorators = [
       </tr>
       </thead>
       <tbody at-tbody>
-      <tr at-tbody-tr *ngFor="let item of datas"><!---->
+      <tr at-tbody-tr *ngFor="let item of datas;let i = index"><!---->
+        <td at-td>
+          <at-checkbox [(ngModel)]="checkIndexes[i]" (changeCheck)="changeCheckIndex($event)"></at-checkbox>
+        </td>
         <td at-td *ngFor="let column of columns">
           <ng-container *ngIf="column.resource_key">
             <a
@@ -860,7 +954,6 @@ CommonDataTableComponent.decorators = [
           <ng-template [ngTemplateOutlet]="handle_columns" [ngTemplateOutletContext]="{$implicit: item}"></ng-template>
         </td>
       </tr>
-
       </tbody>
       <div footer>
         <tt-empty-data [data]="datas"></tt-empty-data>
@@ -885,6 +978,7 @@ CommonDataTableComponent.propDecorators = {
     Model: [{ type: Input }],
     resource: [{ type: Input }],
     search_columns: [{ type: Input }],
+    edit_columns: [{ type: Input }],
     handle_columns: [{ type: Input }],
     extra_search: [{ type: Input }],
     prefixRoute: [{ type: Input }],
@@ -984,12 +1078,18 @@ class SearchGroupComponent {
         this.search_columns = [];
         this.search_params = {};
         this.onSearch = new EventEmitter();
+        // tslint:disable-next-line:no-any
+        this.update = new EventEmitter();
+        this.delete = new EventEmitter();
         this.created_at_before = '';
         this.created_at_after = '';
         this.updated_at_before = '';
         this.updated_at_after = '';
         this.show_more = false;
         this.range_keys = {};
+        this.edit_params = {};
+        this.visible = false;
+        this.edit_columns = [];
         this.onChange = (/**
          * @return {?}
          */
@@ -1036,6 +1136,12 @@ class SearchGroupComponent {
     /**
      * @return {?}
      */
+    close() {
+        this.visible = false;
+    }
+    /**
+     * @return {?}
+     */
     reset() {
         this.search_params = {};
         this.created_at_before = '';
@@ -1044,6 +1150,12 @@ class SearchGroupComponent {
         this.updated_at_after = '';
         this.range_keys = {};
         this.onChange(this.search_params);
+    }
+    /**
+     * @return {?}
+     */
+    edit() {
+        this.visible = true;
     }
     /**
      * @param {?} $event
@@ -1077,59 +1189,26 @@ class SearchGroupComponent {
         this.search_params[`search[between_${key}]`] = `${this.range_keys[key].before} , ${this.range_keys[key].after}`;
         this.onChange(this.search_params);
     }
+    /**
+     * @return {?}
+     */
+    batchUpdate() {
+        this.update.emit(this.edit_params);
+        this.visible = false;
+    }
+    /**
+     * @return {?}
+     */
+    batchDelete() {
+        this.delete.emit();
+    }
 }
 SearchGroupComponent.decorators = [
     { type: Component, args: [{
                 selector: 'tt-search-group',
                 template: `
     <div at-row class="search-bar-container">
-      <div *ngFor="let item of search_columns;let i =index" at-col [span]="item.type ==='range'? 11 : 5"
-           [offset]=" ((i) % 4) == 0 ? 0 : 1">
-        <at-form-item>
-          <div at-col [span]="24" class="search-label">
-            {{ ("Model." + item.name) | I18n | async}}
-          </div>
-          <at-form-control [span]="24">
-            <ng-container [ngSwitch]="item.type">
-              <input class="search-input" *ngSwitchCase="'input'" at-input
-                     [(ngModel)]="search_params['search[like_'+item.key +']']">
-              <atInput class="search-input" *ngSwitchCase="'number'"
-                       [atType]="'number'"
-                       [(ngModel)]="search_params['search['+item.key +']']">
-              </atInput>
-              <at-select [multiple]="item.multiple" [(ngModel)]="search_params['search['+item.key +']']" *ngSwitchCase="'select'"
-                         style="width: 290px">
-                <at-option [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
-                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
-                           [atLabel]="option.name"
-                           [atValue]="option.value">
-                </at-option>
-              </at-select>
-              <ng-container *ngSwitchCase="'range'">
-                <div at-row>
-                  <div at-col [span]="11">
-                    <atDatetimePicker [ngModel]="range_keys[item.key]?.before"
-                                      [inputIcon]="'calendar'"
-                                      (ngModelChange)="setRange($event,item.key,'before')"
-                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
-                  </div>
-                  <div at-col [span]="1" style="  left: 1%;position: relative">
-                    <at-divider [height]="3"></at-divider>
-                  </div>
-                  <div at-col [span]="11" [offset]="1">
-                    <atDatetimePicker [ngModel]="range_keys[item.key]?.after"
-                                      [inputIcon]="'calendar'"
-                                      (ngModelChange)="setRange($event,item.key,'after')"
-                                      [format]="'YYYY-MM-DD HH:mm:ss'"
-                                      [disableDate]="range_keys[item.key]?.before"></atDatetimePicker>
-                  </div>
-                </div>
-              </ng-container>
-            </ng-container>
-          </at-form-control>
-        </at-form-item>
-
-      </div>
+      <ng-template [ngTemplateOutlet]="search_template"></ng-template>
       <ng-template [ngTemplateOutlet]="extra_search"></ng-template>
       <div at-col [span]="24">
         <div style="margin-bottom: 24px">
@@ -1223,11 +1302,15 @@ SearchGroupComponent.decorators = [
           </button>
           <at-divider [vertical]="true" [height]="20"></at-divider>
           <button at-button (click)="reset()" [atType]="'primary'" hollow>
-        <span>
+            <span>
         <tt-i18n [t]="'Button.reset'"></tt-i18n>
       </span>
           </button>
-          <ng-template [ngTemplateOutlet]="buttons" ></ng-template>
+          <at-divider [vertical]="true" [height]="20"></at-divider>
+          <button at-button (click)="edit()" [atType]="'primary'">
+            <span>批量编辑</span>
+          </button>
+          <ng-template [ngTemplateOutlet]="buttons"></ng-template>
         </div>
       </div>
     </div>
@@ -1241,6 +1324,104 @@ SearchGroupComponent.decorators = [
     <!--</ul>-->
     <!--</at-dropdown>-->
     <!--</div>-->
+
+    <at-drawer [atClosable]="true" [atVisible]="visible" (atOnClose)="close()" atPlacement="right" [atTitle]="drawer_title" [atWidth]="320">
+      <ng-template [ngTemplateOutlet]="edit_template"></ng-template>
+    </at-drawer>
+    <ng-template #drawer_title>
+      <button at-button (click)="batchUpdate()" [atType]="'primary'"> 批量更新</button>
+      <!--<at-divider [vertical]="true" [height]="20"></at-divider>-->
+      <!--<button at-button (click)="batchDelete()" [atType]="'error'" hollow> 批量删除</button>-->
+    </ng-template>
+
+    <ng-template #search_template let-item let-bind="bind">
+      <div *ngFor="let item of search_columns;let i =index" at-col [span]="item.type ==='range'? 11 : 5"
+           [offset]=" ((i) % 4) == 0 ? 0 : 1">
+        <at-form-item>
+          <div at-col [span]="24" class="search-label">
+            {{ ("Model." + item.name) | I18n | async}}
+          </div>
+          <at-form-control [span]="24">
+            <ng-container [ngSwitch]="item.type">
+              <input class="search-input" *ngSwitchCase="'input'" at-input
+                     [(ngModel)]="search_params['search[like_'+item.key +']']">
+              <atInput class="search-input" *ngSwitchCase="'number'"
+                       [atType]="'number'"
+                       [(ngModel)]="search_params['search['+item.key +']']">
+              </atInput>
+              <at-select [multiple]="item.multiple" [(ngModel)]="search_params['search['+item.key +']'+ (item.multiple ? '[]' : '')]"
+                         *ngSwitchCase="'select'"
+                         style="width: 290px">
+                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
+                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
+                           [atLabel]="option.name"
+                           [atValue]="option.value">
+                </at-option>
+              </at-select>
+              <ng-container *ngSwitchCase="'range'">
+                <div at-row>
+                  <div at-col [span]="11">
+                    <atDatetimePicker [ngModel]="range_keys[item.key]?.before"
+                                      [inputIcon]="'calendar'"
+                                      (ngModelChange)="setRange($event,item.key,'before')"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
+                  </div>
+                  <div at-col [span]="1" style="  left: 1%;position: relative">
+                    <at-divider [height]="3"></at-divider>
+                  </div>
+                  <div at-col [span]="11" [offset]="1">
+                    <atDatetimePicker [ngModel]="range_keys[item.key]?.after"
+                                      [inputIcon]="'calendar'"
+                                      (ngModelChange)="setRange($event,item.key,'after')"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"
+                                      [disableDate]="range_keys[item.key]?.before"></atDatetimePicker>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+          </at-form-control>
+        </at-form-item>
+
+      </div>
+    </ng-template>
+
+    <ng-template #edit_template let-item let-bind="bind">
+      <div *ngFor="let item of edit_columns;let i =index" at-col [span]="24">
+        <at-form-item>
+          <div at-col [span]="24" class="search-label">
+            {{ ("Model." + item.name) | I18n | async}}
+          </div>
+          <at-form-control [span]="24">
+            <ng-container [ngSwitch]="item.type">
+              <input class="search-input" *ngSwitchCase="'input'" at-input
+                     [(ngModel)]="edit_params[item.key]">
+              <atInput class="search-input" *ngSwitchCase="'number'"
+                       [atType]="'number'"
+                       [(ngModel)]="edit_params[item.key]">
+              </atInput>
+              <at-select [multiple]="item.multiple" [(ngModel)]="edit_params[item.key]" *ngSwitchCase="'select'"
+                         style="width: 290px">
+                <at-option *ngIf="!item.multiple" [atLabel]="'DataSource.all' | I18n | async" [atValue]="''"></at-option>
+                <at-option *ngFor="let option of  item.async ? (item.data_source | async) : item.data_source"
+                           [atLabel]="option.name"
+                           [atValue]="option.value">
+                </at-option>
+              </at-select>
+              <ng-container *ngSwitchCase="'date'">
+                <div at-row>
+                  <div at-col [span]="24">
+                    <atDatetimePicker [(ngModel)]="edit_params[item.key]"
+                                      [inputIcon]="'calendar'"
+                                      [format]="'YYYY-MM-DD HH:mm:ss'"></atDatetimePicker>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+          </at-form-control>
+        </at-form-item>
+
+      </div>
+    </ng-template>
   `,
                 providers: [{
                         provide: NG_VALUE_ACCESSOR,
@@ -1260,7 +1441,10 @@ SearchGroupComponent.propDecorators = {
     extra_form: [{ type: Input }],
     onSearch: [{ type: Output }],
     buttons: [{ type: Input }],
-    extra_search: [{ type: Input }]
+    extra_search: [{ type: Input }],
+    update: [{ type: Output }],
+    delete: [{ type: Output }],
+    edit_columns: [{ type: Input }]
 };
 
 /**

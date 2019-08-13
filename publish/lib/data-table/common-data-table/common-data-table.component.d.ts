@@ -1,6 +1,6 @@
 import { EventEmitter, OnInit, TemplateRef } from '@angular/core';
 import { DataBaseComponent } from '../../data-base/database.component';
-import { SearchParams } from '../../interfaces/any-object.interface';
+import { AnyObject, SearchParams } from '../../interfaces/any-object.interface';
 export interface CommonDataTableColumn {
     name: string;
     key: string;
@@ -20,6 +20,7 @@ export declare class CommonDataTableComponent extends DataBaseComponent implemen
     Model: string;
     resource: string;
     search_columns: any[];
+    edit_columns: any[];
     handle_columns: TemplateRef<{
         $implicit: any;
     }>;
@@ -34,4 +35,8 @@ export declare class CommonDataTableComponent extends DataBaseComponent implemen
     search(): void;
     changeSearchParams(): void;
     readonly model: string;
+    changeCheckIndex(check: boolean): void;
+    checkList(value: boolean): void;
+    deleteAll(): void;
+    batchUpdate(update_params: AnyObject): void;
 }
